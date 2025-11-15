@@ -21,15 +21,15 @@ node ./bin/index.js <command>
 
 - `add <description>`
 
-  # CLI Practice Skills — Workspace
+## CLI Practice Skills — Workspace
 
   This repository is a workspace for small CLI practice projects. It contains one or more example command-line tools and supporting files. The purpose of this workspace is to explore CLI patterns, file-based persistence, and simple Node.js tooling.
 
-  ## Structure
+## Structure
 
-  - `Task Tracker/` — a sample CLI that manages tasks and stores them in `db.json`.
-    - `bin/index.js` — the CLI entry point for the Task Tracker.
-    - `db.json` — the data file used by the Task Tracker (created at runtime).
+- `Task Tracker/` — a sample CLI that manages tasks and stores them in `db.json`.
+- `bin/index.js` — the CLI entry point for the Task Tracker.
+- `db.json` — the data file used by the Task Tracker (created at runtime).
 
   ## Running the Task Tracker (example)
 
