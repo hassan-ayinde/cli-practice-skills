@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 
 const taskCommand = process.argv[2];
-
+const dbPath = path.join(__dirname, "..", "db.json");
 let tasks = [];
 let newTask = {
   id: null,
@@ -11,19 +11,34 @@ let newTask = {
   status: "todo",
   timeCreated: null,
 };
-const dbPath = path.join(__dirname, "..", "db.json");
+
+/**
+ * Loads tasks from the db.json file.
+ *
+ * Reads the JSON file containing tasks and parses it into an array of task objects.
+ * If the file does not exist or parsing fails, it returns an empty array.
+ *
+ * @returns {Array<Object>} An array of task objects. Each task has properties like
+ *  - id: number
+ *  - description: string
+ *  - status: string ("todo" | "done")
+ *  - timeCreated: string (ISO date)
+ *  - updatedAt?: string (ISO date, optional)
+ */
+
+function loadTasks() {
+  if (!fs.existsSync(dbPath)) return [];
+  try {
+    return JSON.parse(fs.readFileSync(dbPath, "utf-8")) || [];
+  } catch {
+    return [];
+  }
+}
+
 switch (taskCommand) {
   case "add":
     // ensure db file exists and read existing tasks
-    if (fs.existsSync(dbPath)) {
-      try {
-        const raw = fs.readFileSync(dbPath, "utf-8");
-        tasks = JSON.parse(raw) || [];
-      } catch (err) {
-        // if parsing fails, fallback to empty list
-        tasks = [];
-      }
-    }
+    tasks = loadTasks();
 
     // compute next id (max id + 1) or 1 when no tasks
     const nextId =
@@ -31,10 +46,15 @@ switch (taskCommand) {
 
     newTask = {
       id: nextId,
-      description: process.argv[3] || "",
+      description: process.argv[3],
       status: "todo",
       timeCreated: new Date().toISOString(),
     };
+
+    if (!newTask.description) {
+      console.error("Usage: add <description>");
+      process.exit(1);
+    }
 
     tasks.push(newTask);
 
@@ -42,22 +62,19 @@ switch (taskCommand) {
     console.log(`Added task id=${nextId}`);
     break;
   case "update":
+    const status = ["todo", "in-progress", "done"];
     const id = parseInt(process.argv[3], 10);
     const field = process.argv[4];
-    const value = process.argv[5];
-    if (!id || !field || typeof value === "undefined") {
+    const statusValue = process.argv[5];
+    if (!status.includes(statusValue)) {
+      console.error("Status must be one of: todo, in-progress, done");
+      process.exit(1);
+    }
+    if (!id || !field || typeof statusValue === "undefined") {
       console.error("Usage: update <id> <field> <value>");
       process.exit(1);
     }
-
-    try {
-      const raw = fs.readFileSync(dbPath, "utf-8");
-      tasks = JSON.parse(raw) || [];
-    } catch (err) {
-      console.error("Could not read db.json");
-      process.exit(1);
-    }
-
+    tasks = loadTasks();
     // Find and update
     const idx = tasks.findIndex((t) => t.id === id);
     if (idx === -1) {
@@ -68,10 +85,10 @@ switch (taskCommand) {
       console.error("Can only update 'description' or 'status'.");
       process.exit(1);
     }
-    tasks[idx][field] = value;
+    tasks[idx][field] = statusValue;
     tasks[idx]["updatedAt"] = new Date().toISOString();
     fs.writeFileSync(dbPath, JSON.stringify(tasks, null, 2), "utf-8");
-    console.log(`Task id=${id} updated: ${field} -> ${value}`);
+    console.log(`Task id=${id} updated: ${field} -> ${statusValue}`);
     break;
   case "delete":
     const delId = parseInt(process.argv[3], 10);
@@ -79,15 +96,7 @@ switch (taskCommand) {
       console.error("Usage: delete <id>");
       process.exit(1);
     }
-
-    try {
-      const raw = fs.readFileSync(dbPath, "utf-8");
-      tasks = JSON.parse(raw) || [];
-    } catch (err) {
-      console.error("Could not read db.json");
-      process.exit(1);
-    }
-
+    tasks = loadTasks();
     const initialLength = tasks.length;
     tasks = tasks.filter((t) => t.id !== delId);
     if (tasks.length === initialLength) {
@@ -99,13 +108,7 @@ switch (taskCommand) {
     console.log(`Deleted task id=${delId}`);
     break;
   case "list":
-    try {
-      const raw = fs.readFileSync(dbPath, "utf-8");
-      tasks = JSON.parse(raw) || [];
-    } catch (err) {
-      console.error("Could not read db.json");
-      process.exit(1);
-    }
+    tasks = loadTasks();
 
     if (tasks.length === 0) {
       console.log("No tasks found.");
