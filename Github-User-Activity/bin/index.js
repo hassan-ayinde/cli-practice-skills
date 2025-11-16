@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-const userName = process.argv[2];
-const repoName = process.argv[3];
+const cliCommands = process.argv.slice(2);
+const [userName, repoName] = cliCommands;
 if (!userName || !repoName) {
   console.error("Usage: github-activity <github-username> <repository-name>");
   process.exit(1);
